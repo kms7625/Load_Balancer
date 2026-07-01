@@ -17,21 +17,27 @@ This is an infrastructure documentation repository for building a VirtualBox-bas
 - Host OS: Windows 11, VirtualBox 7.2.10
 - VirtualBox 7.x does **not** have a GUI Network Manager — use `VBoxManage.exe` via PowerShell instead
 - VirtualBox 7.x unattended install runs automatically unless "Proceed with Unattended Installation" is **unchecked** at VM creation; unattended installs create user `vboxuser` / `changeme`
-- All 3 VMs (haproxy-lb, web-01, web-02) installed via unattended install: username `vboxuser` / `changeme`
-- SSH from Windows via NAT port forwarding:
+- haproxy-lb: unattended install (vboxuser/changeme); web-01, web-02: cloned from haproxy-lb then hostname/IP changed
+- SSH from Windows via NAT port forwarding (all confirmed working):
   - haproxy-lb: `ssh -p 2222 vboxuser@127.0.0.1`
-  - web-01: `ssh -p 2223 vboxuser@127.0.0.1` (port forwarding to be configured)
-  - web-02: `ssh -p 2224 vboxuser@127.0.0.1` (port forwarding to be configured)
+  - web-01: `ssh -p 2223 vboxuser@127.0.0.1`
+  - web-02: `ssh -p 2224 vboxuser@127.0.0.1`
 - enp0s3 = NAT adapter (internet), enp0s8 = Host-Only adapter (inter-VM traffic); enp0s8 requires manual static IP configuration via netplan
-- haproxy-lb enp0s8 static IP confirmed working: `192.168.56.10/24` set via `/etc/netplan/00-installer-config.yaml`
 - `netplan apply` produces harmless permission warnings — safe to ignore
+- HAProxy health check must use `HTTP/1.0` not `HTTP/1.1` — nginx rejects HTTP/1.1 requests without a Host header
+- After cloning, `/etc/nginx/sites-enabled/default` must be deleted to avoid `default_server` conflict with `health.conf`
+
+## Build Status
+
+**완료** — 전체 구축 및 동작 검증 완료 (2026-07-01)
 
 ## Known Issues
 
-- Ubuntu 22.04 Server installer keyboard freeze: occurs on Profile Setup screen in VirtualBox; workaround is unattended install
+- Ubuntu 22.04 Server installer keyboard freeze: occurs on Profile Setup screen in VirtualBox; workaround is to clone haproxy-lb instead
 - Ubuntu installer mirror check may time out on first attempt; select **Continue** to proceed
 - Unattended install does **not** install OpenSSH server — must run `sudo apt install -y openssh-server` manually after first boot
 - `sudo` command typed in Windows PowerShell will fail — all `sudo` commands must be run inside the Ubuntu VM via SSH or console
+- `systemctl status` opens a pager — use `--no-pager` flag to avoid getting stuck
 
 ## IP Scheme
 
