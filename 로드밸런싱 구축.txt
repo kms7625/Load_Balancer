@@ -1,0 +1,400 @@
+버추얼박스 설치
+iso다운 https://releases.ubuntu.com/22.04/ubuntu-22.04.5-live-server-amd64.iso
+
+  VM 생성 — haproxy-lb                                                                                     
+                                                                                                           
+  VirtualBox 메인 화면에서 "새로 만들기" 클릭                                                              
+                                                                                                           
+  1단계 — 기본 정보                                                                                        
+  이름:          haproxy-lb                                                                                
+  폴더:          기본값 유지                                                                               
+  ISO 이미지:    다운받은 ubuntu-22.04.5-live-server-amd64.iso 선택                                        
+  유형:          Linux                                                                                     
+  버전:          Ubuntu (64-bit)                                                                           
+                                                                                                           
+  ▎ "자동 설치 건너뛰기" 체크 ← 반드시 체크 (수동 설치)                                                    
+                                                                                                           
+  2단계 — 하드웨어                                                                                         
+  메모리:  2048 MB                                                                                         
+  CPU:     2                                                                                               
+                                                                                                           
+  3단계 — 가상 하드 디스크                                                                                 
+  새 가상 하드 디스크 만들기                                                                               
+  크기: 20 GB
+
+완료 클릭 후 VM이 생성되면 아직 시작하지 말고, 네트워크 설정을 먼저 합니다.                              
+                                                                                                           
+  ---                                                                                                      
+  네트워크 설정 (haproxy-lb)                                                                               
+                                                                                                           
+  haproxy-lb 선택 → 설정 → 네트워크                                                                        
+                                                                                                           
+  어댑터 1:                                                                                                
+    - 사용하기 체크                                                                                        
+    - 다음에 연결됨: NAT   ← 인터넷(apt install)용                                                         
+                                                                                                           
+  어댑터 2:                                                                                                
+    - 사용하기 체크                                                                                        
+    - 다음에 연결됨: 호스트 전용 어댑터                                                                    
+    - 이름: VirtualBox Host-Only Ethernet Adapter
+
+
+ 
+====================================
+
+Ubuntu 22.04 Server 설치 — haproxy-lb
+(수동설치 진행이 잘 안될시 자동설치 진행)
+1. Try or Install Ubuntu Server 선택 → Enter
+
+2. 언어 선택
+English → Enter
+
+3. Installer update 화면
+Continue without updating → Enter
+
+4. Keyboard configuration
+Layout: English (US)
+Variant: English (US)
+Done → Enter
+
+5. Choose type of install
+Ubuntu Server → Enter (기본값)
+
+6. Network connections
+enp0s3 (NAT)은 자동으로 IP 할당됨 → 확인만
+enp0s8 (Host-Only)은 일단 그대로 둠 → 나중에 수동 설정
+Done → Enter
+
+7. Proxy 설정
+비워두고 Done → Enter
+
+8. Mirror 설정
+기존 주소(http://archive.ubuntu.com/ubuntu) 를 지우고
+http://mirror.kakao.com/ubuntu
+입력 후 Done → Enter
+
+9. Storage configuration
+Use an entire disk → Enter
+Done → Enter
+Continue → Enter  (경고창)
+
+10. Profile setup
+Your name:        admin
+Server name:      haproxy-lb
+Username:         admin
+Password:         (원하는 비밀번호)
+Confirm:          (동일하게)
+Done → Enter
+
+11. SSH Setup
+Install OpenSSH server → Space키로 체크
+Done → Enter
+
+12. Featured snaps
+아무것도 선택하지 않고 Done → Enter
+
+설치 완료되면 Reboot Now → Enter
+
+
+hostname
+ip a
+정보확인
+
+
+타이핑이 불편하니 SSH 먼저 연결. VirtualBox에서 포트포워딩 설정합니다.
+
+VM은 그대로 켜둔 채로 Windows에서:
+
+VirtualBox 메인 화면
+→ haproxy-lb 우클릭 → 설정
+→ 네트워크 → 어댑터 1 (NAT)
+→ 고급 → 포트 포워딩
+→ [+] 버튼으로 규칙 추가:
+
+  이름: ssh
+  프로토콜: TCP
+  호스트 IP: (빈칸)
+  호스트 포트: 2222
+  게스트 IP: (빈칸)
+  게스트 포트: 22
+
+저장 후 Windows PowerShell에서:
+
+ssh -p 2222 vboxuser@127.0.0.1
+
+연결되면 이후 모든 작업을 여기서 복사/붙여넣기
+
+이제 다음 단계인 STEP 4 — 고정 IP 설정으로 넘어가면 됨                                              
+                                                                                                           
+  haproxy-lb의 enp0s8에 192.168.56.10 고정 IP를 설정                                               
+                                                                                                           
+  ip a                                                                                                     
+                                                                                                           
+  먼저 실행해서 enp0s8 인터페이스가 보이는지 확인
+
+enp0s8가 보이고 state DOWN 상태면 정상. 이제 고정 IP를 설정
+
+sudo nano /etc/netplan/00-installer-config.yaml
+
+파일 열리면 기존 내용을 모두 지우고 아래 내용으로 교체
+
+network:
+  version: 2
+  ethernets:
+    enp0s3:
+      dhcp4: true
+    enp0s8:
+      dhcp4: no
+      addresses:
+        - 192.168.56.10/24
+
+들여쓰기 주의 — 스페이스 2칸씩. 탭 말고 스페이스로 입력
+
+저장: Ctrl+O → Enter → Ctrl+X
+
+그 다음:
+
+sudo netplan apply
+ip a
+
+enp0s8에 192.168.56.10 할당되면 고정 ip 설정 완료
+
+
+
+  다음은 web-01, web-02 VM 생성. VirtualBox로 돌아가서                                           
+                                                                                                           
+  1. 새로 만들기                                                                                           
+  2. 이름: web-01, ISO: ubuntu-22.04.5-live-server-amd64.iso, 메모리 1024MB, CPU 1, 디스크 20GB            
+  3. "자동 설치 건너뛰기" 체크 (중요!)                                                                     
+  4. 네트워크: 어댑터1 NAT, 어댑터2 Host-Only                                                              
+  5. Ubuntu 설치 (haproxy-lb와 동일, Server name만 web-01로)                                               
+  6. web-02도 동일하게 반복
+
+web-01, web-02 생성하면 각 ubuntu 설치
+위 1단계~12단계 진행
+
+ 설치 자체가 계속 문제가 생기면  haproxy-lb를 복제해서 진행                              
+                                                                                                           
+  VirtualBox에서
+  1. haproxy-lb 우클릭 → Clone                                                                             
+  2. 이름: web-01    
+OS Installation Options 둘다 체크 해제         
+스냅샷: current machine state                                                                             
+  3. MAC Address Policy: 든 네트워크 어댑터의 새 MAC 주소 생성 선택                                                
+  4. Clone type: Full clone                                                                                
+  5. Finish
+
+복제 완료 후
+VirtualBox에서 web-01 선택 → 설정 → 네트워크 → 어댑터1(NAT) → 고급 → 포트 포워딩
+
+이름: ssh
+프로토콜: TCP
+호스트 포트: 2223
+게스트 포트: 22
+
+web-02도 동일하게, 호스트 포트만 222
+
+포워드 설정 완료 후
+
+이제 SSH 접속 확인 Windows PowerShell에서
+
+ssh -p 2223 vboxuser@127.0.0.1
+
+접속되면 changeme 입력
+
+ 복제해서 가져온거라 hostname을 web-01로 변경해야 합니다. 아래 순서로 진행
+                                                                                                           
+  1. hostname 변경                                                                                         
+  sudo hostnamectl set-hostname web-01                                                                     
+                                                                                                           
+  2. IP 변경 (192.168.56.11)                                                                               
+  sudo nano /etc/netplan/00-installer-config.yaml                                                          
+                                                                                                           
+  192.168.56.10 → 192.168.56.11 로 변경 후 저장(Ctrl+O → Enter → Ctrl+X)                                   
+                                                                                                           
+  sudo netplan apply                                                                                       
+                                                                                                           
+  3. 확인                                                                                                  
+  hostname                                                                                                 
+  ip a                                                                                                     
+                                                                                                           
+  web-01 과 192.168.56.11 이 나오면 완료
+
+이제 새 터미널 열어서 web-02 접속
+ssh -p 2224 vboxuser@127.0.0.1
+
+접속 후:
+sudo hostnamectl set-hostname web-02
+sudo nano /etc/netplan/00-installer-config.yaml
+
+192.168.56.10 → 192.168.56.12 로 변경 후:
+sudo netplan apply
+hostname
+ip a 로 이름 및 할당 확인
+
+다음은 STEP 5 — Nginx 설치 (web-01, web-02)
+web-01 터미널에서
+
+sudo apt update && sudo apt install -y nginx
+echo "<h1>Backend: $(hostname)</h1>" | sudo tee /var/www/html/index.html
+sudo tee /etc/nginx/conf.d/health.conf <<'EOF'
+server {
+    listen 80 default_server;
+    location /health {
+        access_log off;
+        return 200 "OK\n";
+        add_header Content-Type text/plain;
+    }
+    location / {
+        root /var/www/html;
+        index index.html;
+    }
+}
+EOF
+sudo nginx -t
+sudo systemctl enable nginx
+sudo systemctl start nginx
+
+web-02도 동일하게 실행. 동시진행가능
+
+진행 후 haproxy-lb에서
+curl http://192.168.56.11/health
+curl http://192.168.56.12/health
+둘 다 OK 나오면 계속 진행
+
+web-01에서 직접 확인
+curl http://localhost/health
+sudo nginx -T | grep -A 20 "health"
+
+
+
+  sudo rm /etc/nginx/sites-enabled/default                                                                 
+  sudo nginx -t                                                                                            
+  sudo systemctl reload nginx                                                                              
+  curl http://localhost/health
+ok뜨는지 확인
+
+haproxy-lb에서 ok뜨는지 최종 확인
+
+curl http://192.168.56.11/health
+curl http://192.168.56.12/health
+
+
+이제 STEP 6 — HAProxy 설치  haproxy-lb에서
+
+sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:vbernat/haproxy-2.8
+sudo apt update
+sudo apt install -y haproxy=2.8.*
+
+haproxy -v 로 HAProxy 2.8 설치 확인 후 다음 진행
+
+
+
+설정 파일 작성하세요. haproxy-lb에서
+
+sudo nano /etc/haproxy/haproxy.cfg
+
+-작성내용-
+                                                            
+  global                                                                                                   
+      log /dev/log local0                                                                                  
+      log /dev/log local1 notice                                                                           
+      chroot /var/lib/haproxy                                                                              
+      stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners                        
+      stats timeout 30s                                                                                    
+      user haproxy                                                                                         
+      group haproxy                                                                                        
+      daemon                                                                                               
+      maxconn 20000                                                                                        
+                                                                                                           
+  defaults                                                                                                 
+      log     global                                                                                       
+      mode    http                                                                                         
+      option  httplog                                                                                      
+      option  dontlognull                                                                                  
+      timeout connect  5s                                                                                  
+      timeout client   30s                                                                                 
+      timeout server   30s                                                                                 
+      timeout http-request 10s                                                                             
+                                                                                                           
+  frontend stats                                                                                           
+      bind *:8404                                                                                          
+      stats enable                                                                                         
+      stats uri /stats                                                                                     
+      stats refresh 10s                                                                                    
+      stats auth admin:changeme123                                                                         
+                                                                                                           
+  frontend http_front                                                                                      
+      bind *:80                                                                                            
+      default_backend web_servers                                                                          
+      option forwardfor                                                                                    
+                                                                                                           
+  backend web_servers                                                                                      
+      balance roundrobin                                                                                   
+      option httpchk GET /health HTTP/1.1\r\nHost:\ localhost                                              
+      http-check expect status 200                                                                         
+      server web-01 192.168.56.11:80 check inter 2s rise 2 fall 3                                          
+      server web-02 192.168.56.12:80 check inter 2s rise 2 fall 3                                          
+
+
+작성 후
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg 로 검증 통과 후 아래 진행
+
+sudo systemctl status haproxy --no-pager
+
+web-01, web-02가 DOWN으로 잡혔는지 확인 후 연결 확인
+ping -c 2 192.168.56.11
+ping -c 2 192.168.56.12
+
+네트워크 정상이면 Nginx HTTP 응답 확인
+curl http://192.168.56.11/health
+curl http://192.168.56.12/health
+ok나오면 다음 단계 진행
+
+echo "show servers state" | sudo socat stdio /run/haproxy/admin.sock 
+안되면 sudo apt install -y socat 로 설치 후 재실행해서 서버 확인
+
+[HTTP/1.1 일 때]
+ Host 헤더가 필수라 nginx가 거부함 설정 수정해야됨
+
+sudo nano /etc/haproxy/haproxy.cfg
+
+backend web_servers 섹션에서 아래 줄을
+option httpchk GET /health HTTP/1.1
+
+이렇게 변경
+option httpchk GET /health HTTP/1.0
+
+저장 후
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+sudo systemctl restart haproxy
+
+이제 서버 상태 확인
+echo "show servers state" | sudo socat stdio /run/haproxy/admin.sock
+srv_op_state가 2이면 UP으로 정상
+
+부하 분산 동작 확인
+for i in $(seq 1 6); do curl -s http://192.168.56.10/; done
+교대로 응답 잘하면 다음 단계 진행
+
+Windows 브라우저에서 Stats 페이지 확인
+http://192.168.56.10:8404/stats
+ID: admin
+PW: changeme123
+잘되면 다음단계 진행
+
+장애 복구 테스트
+web-01에서 Nginx 중단
+sudo systemctl stop nginx
+
+haproxy-lb에서 약 6초 후 확인
+for i in $(seq 1 4); do curl -s http://192.168.56.10/; done
+web-02로만 응답 오면 성공
+
+web-01 다시시작
+sudo systemctl start nginx 후 web-02는 중단 후 haproxy-lb에서 확인
+for i in $(seq 1 6); do curl -s http://192.168.56.10/; done
+
+교차확인 후 정상이면 HAProxy 로드밸런서 구축 완료
+

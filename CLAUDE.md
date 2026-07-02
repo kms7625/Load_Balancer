@@ -11,6 +11,9 @@ This is an infrastructure documentation repository for building a VirtualBox-bas
 - `load.md` — Technical reference: load balancer comparison, VM sizing, HAProxy config examples, IaC expansion tips
 - `setup_guide.md` — Step-by-step hands-on guide: from VirtualBox install to verified load balancing; updated incrementally as each step is completed
 - `daily_log.md` — Daily work log tracking progress, issues encountered, and next steps
+- `build_report.md` — Internal-facing build report (architecture diagram, VM/IP tables, troubleshooting table, verification results); generated from `로드밸런싱 구축.txt` + `daily_log.md` + `setup_guide.md` + `CLAUDE.md`
+- `로드밸런싱 구축.txt` — Original raw work notes; source of truth that `build_report.md` is checked against
+- `로드밸런싱_구축_가이드.pdf` — PDF export of the build guide for sharing outside the repo
 
 ## Environment Facts (confirmed during actual build)
 
@@ -53,3 +56,4 @@ This is an infrastructure documentation repository for building a VirtualBox-bas
 - Shell blocks = bash (run inside Ubuntu VMs via SSH); PowerShell blocks = Windows host commands
 - `setup_guide.md` reflects what was actually done, not what was planned — update it only after a step is confirmed working
 - `daily_log.md` is updated at end of each session with completed items and next-day tasks
+- `build_report.md` must only state what's backed by the raw notes/logs; anything not confirmed in source material is labeled "미확인·추가 검증 필요" rather than inferred or guessed
