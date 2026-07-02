@@ -138,3 +138,46 @@ VM 3대 네트워크 설정 완료 및 HAProxy 로드밸런싱 구축 완성
 - 상급자/회사에 `build_report.md` 공유 및 피드백 수렴
 - 실제 인프라 교체 범위 확인 (대상 트래픽 규모, 실제 배포 환경이 클라우드/온프레미스 중 무엇인지)
 - 필요 시 향후 개선 제안(LB 이중화, SSL, IaC 전환) 중 우선순위 항목 논의
+
+---
+
+## 2026-07-02
+
+### 작업 목표
+`로드밸런싱_구축_가이드.pdf` 최종 제출 후 리뷰 대비 준비 및 실제 동작 재검증
+
+### 수행 업무
+
+#### 1. 리뷰 준비 자료 작성 → `review_prep.md`
+- 사용 오픈소스 목록 및 라이선스 정리 (HAProxy GPLv2, Nginx BSD-2-Clause, Ubuntu, VirtualBox 베이스 GPLv2/Extension Pack PUEL, socat GPLv2)
+- 리뷰어가 지적할 가능성이 높은 지점 정리 (VM 사양 변경 미확인, Stats 페이지 기본 비밀번호, LB 이중화 미구축, IaC 미적용, raw 증적 미보존)
+- 예상 Q&A 시나리오 및 리뷰 시연용 명령어 순서 정리
+
+#### 2. HAProxy Stats 페이지(`:8404/stats`) 구조 재확인
+- 헬스체크 결과는 `Check`가 아니라 `LastChk` 컬럼에 `L7OK/200 in Xms` 형태로 표시됨을 확인
+- 페이지 자체는 한글화 불가(하드코딩된 고정 템플릿) — 필요 시 Prometheus+Grafana 연동으로 대체 가능하다고 정리
+
+#### 3. haproxy-lb에서 장애 복구(Failover) 시연 명령어 재실행
+- `for i in $(seq 1 4)` / `seq 1 6` 루프 및 `show servers state`로 재검증 진행
+- 테스트 도중 일시적으로 `No server is available`(503) 및 예상과 다른 패턴(정지시킨 서버가 아니라 web-01만 연속 응답)이 관찰됨 → 어느 서버의 nginx를 멈췄는지 순서 확인이 필요한 상태로 남음(미확인)
+- 최종 `show servers state` 조회 결과 web-01, web-02 모두 `srv_op_state=2`(UP)로 정상, 이후 `seq 1 6` 재실행 시 정상 교대 응답 확인 → 세션 종료 시점 기준 정상 상태
+
+### 트러블슈팅 기록
+
+| 문제 | 원인 | 해결 |
+|---|---|---|
+| Failover 재시연 중 `No server is available`(503) 및 예상과 다른 응답 패턴(web-01만 연속 응답) 발생 | 미확인 — nginx를 멈춘 서버와 명령 실행 순서 재확인 필요 | 최종적으로는 두 서버 모두 UP으로 정상 복귀 확인. 원인 규명은 다음 세션 과제로 이월 |
+
+### 진행 현황
+
+| 단계 | 상태 |
+|---|---|
+| 리뷰 준비 자료 작성 (review_prep.md) | 완료 |
+| Stats 페이지 구조/헬스체크 컬럼 확인 | 완료 |
+| Failover 시연 명령어 재검증 | 부분 완료 (결과는 정상, 중간 이상 패턴 원인 미확인) |
+| VirtualBox Extension Pack 설치 여부 확인 | 미착수 |
+
+### 다음 예정 작업
+- Failover 재시연 중 발생한 503/이상 응답 패턴의 원인 재확인 (nginx 중단 순서 재점검)
+- VirtualBox Extension Pack 설치 여부 확인 후 review_prep.md 오픈소스 라이선스 표 최종 확정
+- 정리된 `review_prep.md`로 실제 리뷰 진행 및 피드백 수렴
