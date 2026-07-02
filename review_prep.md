@@ -80,3 +80,10 @@ Stats 페이지 (Windows 브라우저)
 http://192.168.56.10:8404/stats
 ID: admin / PW: changeme123
 ```
+
+  접속하면 웹 브라우저에서 실시간으로 확인할 수 있는 것들:                                                 
+  - Status: web-01, web-02 각 백엔드 서버가 UP인지 DOWN인지                                                
+  - Sessions: 현재 연결된 세션 수                                                                          
+  - Bytes in/out: 서버별 트래픽 통계                                                                       
+  - Check: 헬스체크 결과 및 응답 시간                                                                      
+  - 서버를 수동으로 drain/maintenance 상태로 전환하는 관리 기능도 포함 
