@@ -144,9 +144,17 @@ VM 3대 네트워크 설정 완료 및 HAProxy 로드밸런싱 구축 완성
 ## 2026-07-02
 
 ### 작업 목표
-`로드밸런싱_구축_가이드.pdf` 최종 제출 후 리뷰 대비 준비 및 실제 동작 재검증
+`로드밸런싱_구축_가이드.pdf` 최종 제출 후 리뷰 대비 준비 및 실제 동작 재검증, VMware Workstation 재구축 착수
 
 ### 수행 업무
+
+#### 0. VMware Workstation 기반 재구축 착수
+- 기존 VirtualBox 기반 구축(2026-07-01 완료)에서 **VMware Workstation 25.0.1**(build-25219725) 기반으로 전환 결정, 재구축 시작
+- 호스트 환경 확인: `vmrun.exe`(VM 전원 제어), `vmnetcfg.exe`(가상 네트워크 편집기), `vnetlib64.exe`(네트워크 설정 조회) 등 CLI 도구 확인
+- 가상 네트워크 어댑터 확인 (`Get-NetAdapter`/`Get-NetIPAddress` 기준): `VMnet8`(NAT, 호스트측 192.168.198.1/24), `VMnet1`(Host-only, 호스트측 192.168.164.1/24)
+- Ubuntu 22.04.5 Server ISO 재사용 확인 (`C:\Users\ms.kang\Downloads\ubuntu-22.04.5-live-server-amd64.iso`)
+- 미확인·추가 검증 필요: VMware 게스트 unattended install 방식, 계정 생성 방식, SSH 포트포워딩(VirtualBox처럼 개별 룰이 아니라 `vmnetnat.conf` 편집 방식으로 추정), 클론 후 정리 절차, guest NIC 명칭(enp0s3/enp0s8 유지 여부), haproxy-lb/web-01/web-02 실제 static IP(192.168.164.10~12 예정이나 게스트 설정 전이라 미확정)
+- CLAUDE.md의 Build Status를 "진행 중"으로 갱신 — VirtualBox 기반 정보는 git 이력으로 보존
 
 #### 1. 리뷰 준비 자료 작성 → `review_prep.md`
 - 사용 오픈소스 목록 및 라이선스 정리 (HAProxy GPLv2, Nginx BSD-2-Clause, Ubuntu, VirtualBox 베이스 GPLv2/Extension Pack PUEL, socat GPLv2)
@@ -178,6 +186,9 @@ VM 3대 네트워크 설정 완료 및 HAProxy 로드밸런싱 구축 완성
 | VirtualBox Extension Pack 설치 여부 확인 | 미착수 |
 
 ### 다음 예정 작업
-- Failover 재시연 중 발생한 503/이상 응답 패턴의 원인 재확인 (nginx 중단 순서 재점검)
-- VirtualBox Extension Pack 설치 여부 확인 후 review_prep.md 오픈소스 라이선스 표 최종 확정
+- Failover 재시연 중 발생한 503/이상 응답 패턴의 원인 재확인 (nginx 중단 순서 재점검) — 단, 이 결과는 구 VirtualBox 환경(192.168.56.10) 기준이므로 VMware 재구축 완료 후에는 재검증 필요
+- VMware Workstation에서 haproxy-lb/web-01/web-02 VM 생성 및 Ubuntu 22.04 설치 진행
+- VMware 환경에서 unattended install/SSH 포트포워딩(vmnetnat.conf) 방식 확인 후 setup_guide.md에 반영
+- ⚠ `review_prep.md`(오픈소스 목록/Q&A/시연 명령어)와 `build_report.md`는 현재 VirtualBox(192.168.56.x) 기준으로 작성되어 있음 — VMware 재구축 완료 시 IP·환경 정보 전면 갱신 필요
+- VirtualBox Extension Pack 설치 여부 확인 후 review_prep.md 오픈소스 라이선스 표 최종 확정 (VMware 전환으로 우선순위 하향 가능)
 - 정리된 `review_prep.md`로 실제 리뷰 진행 및 피드백 수렴
